@@ -56,7 +56,7 @@
 // DEFINES
 //------------------------------------------------------------------------------------
 #define SPX_FW_REV "1.0.0"
-#define SPX_FW_DATE "@ 20180815"
+#define SPX_FW_DATE "@ 20180818"
 
 #define SPX_HW_MODELO "spxR1_diag HW:xmega256A3B R1.0"
 #define SPX_FTROS_VERSION "FW:FRTOS10 TICKLESS"
@@ -160,6 +160,12 @@ void initMCU(void);
 
 void pub_analog_read_battery ( float *mag_val );
 void pub_analog_read_channel ( uint8_t channel, uint16_t *raw_val );
+
+void pub_rangeMeter_init(void);
+void pub_rangeMeter_ping(int16_t *range);
+
+void pub_output_set_consigna_diurna(void);
+void pub_output_set_consigna_nocturna(void);
 
 
 #endif /* SRC_SPXR1_H_ */

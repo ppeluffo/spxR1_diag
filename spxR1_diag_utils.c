@@ -5,7 +5,7 @@
  *      Author: pablo
  */
 
-#include "spx.h"
+#include "spxR1_diag.h"
 
 #define RTC32_ToscBusy()        !( VBAT.STATUS & VBAT_XOSCRDY_bm )
 void RTC32_ToscEnable( bool use1khz );
@@ -240,8 +240,44 @@ void pub_analog_read_channel ( uint8_t channel, uint16_t *raw_val )
 
 uint16_t an_raw_val;
 
-	an_raw_val =ACH_read_channel(channel);
+	an_raw_val = ACH_read_channel(channel);
 	*raw_val = an_raw_val;
 
 }
 //------------------------------------------------------------------------------------
+void pub_output_set_consigna_diurna(void)
+{
+	// En consigna diurna la valvula A (JP28) queda abierta y la valvula B (JP2) cerrada.
+	//
+	// Proporciono corriente.
+	OUT_power_on();
+	// Espero 10s que se carguen los condensasores
+	vTaskDelay( ( TickType_t)( 10000 / portTICK_RATE_MS ) );
+
+	OUT_valve( 'A', V_OPEN, 100 );
+	vTaskDelay( ( TickType_t)( 2000 / portTICK_RATE_MS ) );
+	OUT_valve( 'B', V_CLOSE, 100 );
+
+	OUT_power_off();
+
+	xprintf_P( PSTR("OUTPUTS: Aplico Consigna Diurna\r\n\0") );
+}
+//----------------------------------------------------------------------------------------
+void pub_output_set_consigna_nocturna(void)
+{
+
+	// Proporciono corriente.
+	OUT_power_on();
+	// Espero 10s que se carguen los condensasores
+	vTaskDelay( ( TickType_t)( 10000 / portTICK_RATE_MS ) );
+
+	OUT_valve( 'A', V_CLOSE, 100 );
+	vTaskDelay( ( TickType_t)( 2000 / portTICK_RATE_MS ) );
+	OUT_valve( 'B', V_OPEN, 100 );
+
+	OUT_power_off();
+
+	xprintf_P( PSTR("OUTPUTS: Aplico Consigna Nocturna\r\n\0") );
+}
+//----------------------------------------------------------------------------------------
+

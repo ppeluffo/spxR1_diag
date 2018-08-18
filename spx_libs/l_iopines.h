@@ -122,6 +122,12 @@ uint8_t IO_read_PA0(void);
 uint8_t IO_read_PB7(void);
 uint8_t IO_read_PB2(void);
 uint8_t IO_read_PA2(void);
+
+#define IO_read_D0() IO_read_PB7()
+#define IO_read_D1() IO_read_PB2()
+#define IO_read_D2() IO_read_PA2()
+#define IO_read_D3() IO_read_PA0()
+
 //------------------------------------------------------------------------------------
 // PULSOS
 

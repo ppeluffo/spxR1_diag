@@ -9,7 +9,7 @@
 #define SRC_SPX_TKGPRS_SPX_TKGPRS_H_
 
 #include "frtos-io.h"
-#include "spx.h"
+#include "spxR1_diag.h"
 
 #define MAX_HW_TRIES_PWRON 		3	// Intentos de prender HW el modem
 #define MAX_SW_TRIES_PWRON 		3	// Intentos de prender SW el modem

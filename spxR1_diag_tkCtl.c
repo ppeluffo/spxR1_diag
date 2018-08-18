@@ -5,7 +5,7 @@
  *      Author: pablo
  */
 
-#include "spx.h"
+#include "spxR1_diag.h"
 
 //------------------------------------------------------------------------------------
 static void pv_tkCtl_init_system(void);
@@ -42,6 +42,7 @@ void tkCtl(void * pvParameters)
 static void pv_tkCtl_init_system(void)
 {
 	debug_i2c = false;
+
 }
 //------------------------------------------------------------------------------------
 static void pv_tkCtl_wink_led(void)

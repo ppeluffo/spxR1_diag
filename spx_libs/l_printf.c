@@ -76,10 +76,6 @@ int xnprint( const char *pvBuffer, const uint16_t xBytes )
 
 int bytes2wr = 0;
 
-	// SI la terminal esta desconectada salgo.
-	if ( IO_read_TERMCTL_PIN() == 1 )
-		return(bytes2wr);
-
 	frtos_ioctl (fdUSB,ioctl_OBTAIN_BUS_SEMPH, NULL );
 	bytes2wr = frtos_write( fdUSB, pvBuffer, xBytes );
 	frtos_ioctl (fdUSB,ioctl_RELEASE_BUS_SEMPH, NULL);
@@ -153,10 +149,6 @@ int xCom_nprint( file_descriptor_t fd, const char *pvBuffer, const uint16_t xByt
 	// Imprime en fd sin formatear
 
 int bytes2wr = 0;
-
-	// SI la terminal esta desconectada salgo.
-	if ( IO_read_TERMCTL_PIN() == 1 )
-		return(bytes2wr);
 
 	frtos_ioctl (fdUSB,ioctl_OBTAIN_BUS_SEMPH, NULL );
 	bytes2wr = frtos_write( fdUSB, pvBuffer, xBytes );

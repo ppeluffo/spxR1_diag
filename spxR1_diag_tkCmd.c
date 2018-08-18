@@ -33,6 +33,8 @@ static void pv_cmd_rwXBEE(uint8_t cmd_mode );
 static void pv_cmd_INA(uint8_t cmd_mode );
 static void pv_cmd_rwACH(uint8_t cmd_mode );
 static void pv_cmd_rdBATTERY(void);
+static void pv_cmd_range(void);
+static void pv_cmd_wrOUT8814(void);
 
 #define WR_CMD 0
 #define RD_CMD 1
@@ -64,7 +66,7 @@ uint8_t ticks;
 	// Fijo el timeout del READ
 	ticks = 5;
 	frtos_ioctl( fdUSB,ioctl_SET_TIMEOUT, &ticks );
-	frtos_ioctl( fdBT,ioctl_SET_TIMEOUT, &ticks );
+	//frtos_ioctl( fdBT,ioctl_SET_TIMEOUT, &ticks );
 
 	xprintf_P( PSTR("starting tkCmd..\r\n\0") );
 
@@ -182,6 +184,64 @@ static void cmdWriteFunction(void)
 		return;
 	}
 
+	// CLRD
+	// write clrd {0|1}
+	if (!strcmp_P( strupr(argv[1]), PSTR("CLRD\0"))) {
+		if ( atoi( argv[2]) == 0 ) { IO_clr_CLRD(); }
+		if ( atoi( argv[2]) == 1 ) { IO_set_CLRD(); }
+		return;
+	}
+
+	// RANGE
+	// write range on|off
+	if (!strcmp_P( strupr(argv[1]), PSTR("RANGE\0"))) {
+		if (!strcmp_P( strupr(argv[2]), PSTR("ON\0")) ) {
+			IO_set_UPULSE_RUN();
+			pv_snprintfP_OK();
+			return;
+		}
+
+		if (!strcmp_P( strupr(argv[2]), PSTR("OFF\0")) ) {
+			IO_clr_UPULSE_RUN();
+			pv_snprintfP_OK();
+			return;
+		}
+
+		xprintf_P( PSTR("cmd ERROR: ( write range {on|off} )\r\n\0"));
+		return;
+		return;
+	}
+
+	// OUT 8814
+	// write out sleep|reset|phase(A/B)|enable(A/B)| {0|1}
+	//       out pulse (A/B) (+/-) (ms)
+	//       out power {on|off}
+	if (!strcmp_P( strupr(argv[1]), PSTR("OUT\0")) ) {
+		pv_cmd_wrOUT8814();
+		return;
+	}
+
+	// CONSIGNA
+	// write consigna {diurna|nocturna}
+	if (!strcmp_P( strupr(argv[1]), PSTR("CONSIGNA\0")) ) {
+
+		if (!strcmp_P( strupr(argv[2]), PSTR("DIURNA\0")) ) {
+			pub_output_set_consigna_diurna();
+			pv_snprintfP_OK();
+			return;
+		}
+
+		if (!strcmp_P( strupr(argv[2]), PSTR("NOCTURNA\0")) ) {
+			pub_output_set_consigna_nocturna();
+			pv_snprintfP_OK();
+			return;
+		}
+
+		pv_snprintfP_ERR();
+		return;
+	}
+
+
 	// CMD NOT FOUND
 	xprintf_P( PSTR("ERROR\r\nCMD NOT DEFINED\r\n\0"));
 	return;
@@ -242,15 +302,49 @@ uint16_t raw_val;
 		return;
 	}
 
-	// ACH { 0..4}
+	// ACH { 0..5}
 	// read ach x
 	if (!strcmp_P( strupr(argv[1]), PSTR("ACH\0")) ) {
-		if ( atoi(argv[2]) > 4) {
+		if ( atoi(argv[2]) > 5) {
 			pv_snprintfP_ERR();
 			return;
 		}
 		pub_analog_read_channel( atoi(argv[2]),&raw_val );
 		xprintf_P( PSTR("CH[%02d] raw=%d\r\n\0"),atoi(argv[2]),raw_val );
+		return;
+	}
+
+	// TERM
+	// read term
+	if (!strcmp_P( strupr(argv[1]), PSTR("TERM\0")) ) {
+		xprintf_P( PSTR("TERM=%d\r\n\0"), IO_read_TERMCTL_PIN() );
+		return;
+	}
+
+	// DIN
+	// read din
+	if (!strcmp_P( strupr(argv[1]), PSTR("DIN\0")) ) {
+		xprintf_P( PSTR("D0=%d (Nivel: JP15->jp21(3,2) : PB2)\r\n\0"), IO_read_PB2() );
+		xprintf_P( PSTR("D1=%d (Nivel: JP14->jp30(1,2) : PB7)\r\n\0"), IO_read_PB7() );
+		xprintf_P( PSTR("D2=%d (Nivel: JP13->jp31(1,2) : PA0)\r\n\0"), IO_read_PA0() );
+		xprintf_P( PSTR("D3=%d (Nivel: JP16->jp20(3,2) : PA2)\r\n\0"), IO_read_PA2() );
+		return;
+	}
+
+	// CONTADORES
+	// read contadores
+	if (!strcmp_P( strupr(argv[1]), PSTR("CONTADORES\0")) ) {
+		xprintf_P( PSTR("D0=%d (Nivel:    JP15->jp30(3,2) : PB7)\r\n\0"), IO_read_PB7() );
+		xprintf_P( PSTR("D1=%d (Contador: JP14->jp21(1,2) : PB2)\r\n\0"), IO_read_PB2() );
+		xprintf_P( PSTR("D2=%d (Contador: JP13->jp20(1,2) : PA2)\r\n\0"), IO_read_PA2() );
+		xprintf_P( PSTR("D3=%d (Nivel:    JP16->jp31(3,2) : PA0)\r\n\0"), IO_read_PA0() );
+		return;
+	}
+
+	// RANGE
+	// read range
+	if (!strcmp_P( strupr(argv[1]), PSTR("RANGE\0"))) {
+		pv_cmd_range();
 		return;
 	}
 
@@ -274,29 +368,38 @@ static void cmdHelpFunction(void)
 	// HELP WRITE
 	if (!strcmp_P( strupr(argv[1]), PSTR("WRITE\0"))) {
 		xprintf_P( PSTR("-write\r\n\0"));
-		xprintf_P( PSTR("  debugi2c {on|off}"));
+		xprintf_P( PSTR("  debugi2c {on|off}\r\n\0"));
 		xprintf_P( PSTR("  rtc YYMMDDhhmm\r\n\0"));
-		xprintf_P( PSTR("  (ee,rtcram {pos} {string}\r\n\0"));
+		xprintf_P( PSTR("  ee,rtcram {pos} {string}\r\n\0"));
 		xprintf_P( PSTR("  sens12V {on|off}\r\n\0"));
 		xprintf_P( PSTR("  gprs (pwr|sw|cts|dtr) {on|off}\r\n\0"));
 		xprintf_P( PSTR("       cmd {atcmd}\r\n\0"));
 		xprintf_P( PSTR("  xbee (pwr|sleep|reset) {on|off}\r\n\0"));
 		xprintf_P( PSTR("  bt {on|off}\r\n\0"));
+		xprintf_P( PSTR("      msg {string}\r\n\0"));
 		xprintf_P( PSTR("  ina (id) conf {value}\r\n\0"));
 		xprintf_P( PSTR("  analog {ina_id} conf128 \r\n\0"));
-
+		xprintf_P( PSTR("  clrd {0|1}\r\n\0"));
+		xprintf_P( PSTR("  range {on|off}\r\n\0"));
+		xprintf_P( PSTR("  out { (enable|disable),(set|reset),(sleep|awake),(ph01|ph10) } {A/B}\r\n\0"));
+		xprintf_P( PSTR("      valve (open|close) (A|B) (ms)\r\n\0"));
+		xprintf_P( PSTR("      power {on|off}\r\n\0"));
+		xprintf_P( PSTR("  consigna (diurna|nocturna)\r\n\0"));
 		return;
 	}
 
 	// HELP READ
 	else if (!strcmp_P( strupr(argv[1]), PSTR("READ\0"))) {
 		xprintf_P( PSTR("-read\r\n\0"));
-		xprintf_P( PSTR("  rtc\r\n\0"));
+		xprintf_P( PSTR("  rtc, id\r\n\0"));
 		xprintf_P( PSTR("  ee,rtcram {pos} {lenght}\r\n\0"));
 		xprintf_P( PSTR("  gprs (rsp,rts,dcd,ri)\r\n\0"));
 		xprintf_P( PSTR("  ina {id} {conf|chXshv|chXbusv|mfid|dieid}\r\n\0"));
-		xprintf_P( PSTR("  ach {0..4}, battery\r\n\0"));
-
+		xprintf_P( PSTR("  ach {0..5}, battery\r\n\0"));
+		xprintf_P( PSTR("  term\r\n\0"));
+		xprintf_P( PSTR("  din\r\n\0"));
+		xprintf_P( PSTR("  contadores\r\n\0"));
+		xprintf_P( PSTR("  range\r\n\0"));
 		return;
 
 	}
@@ -473,9 +576,12 @@ static void pv_cmd_sens12V(void)
 //------------------------------------------------------------------------------------
 static void pv_cmd_bt(void)
 {
-	// sens12V on|off
+	// write bt on|off
 	if (!strcmp_P( strupr(argv[2]), PSTR("ON\0")) ) {
 		IO_set_BT_PWR_CTL();
+		vTaskDelay( ( TickType_t)( 1000 / portTICK_RATE_MS ) );
+		xCom_printf_P( fdBT, PSTR("AT+BAUD4\r\n\0"));
+		xprintf_P( PSTR("Init BT9600 ( AT+BAUD4)\r\n\0"),argv[3] );
 		pv_snprintfP_OK();
 		return;
 	}
@@ -486,7 +592,15 @@ static void pv_cmd_bt(void)
 		return;
 	}
 
-	xprintf_P( PSTR("cmd ERROR: ( write bt on{off} )\r\n\0"));
+	// write bt msg {string}
+	if (!strcmp_P(strupr(argv[2]), PSTR("MSG\0"))) {
+		xprintf_P( PSTR("%s\r\0"),argv[3] );
+		xCom_printf_P( fdBT,PSTR("%s\r\0"),argv[3] );
+		xprintf_P( PSTR("sent->%s\r\n\0"),argv[3] );
+		return;
+	}
+
+	xprintf_P( PSTR("cmd ERROR: ( write bt .... )\r\n\0"));
 	return;
 }
 //------------------------------------------------------------------------------------
@@ -775,6 +889,116 @@ float battery;
 	return;
 }
 //------------------------------------------------------------------------------------
+static void pv_cmd_range(void)
+{
+int16_t range;
 
+	pub_rangeMeter_ping(&range);
+	xprintf_P( PSTR("RANGE=%d\r\n\0"),range);
+	pv_snprintfP_OK();
+	return;
+
+}
+//------------------------------------------------------------------------------------
+static void pv_cmd_wrOUT8814(void)
+{
+	// write out { (enable|disable),(set|reset),(sleep|awake),(ph01|ph10) } {A/B}
+	//             power {on|off}
+	//             valve (open|close) (A|B) (ms)
+
+	// write out enable (A|B)
+	if (!strcmp_P( strupr(argv[2]), PSTR("ENABLE\0")) ) {
+		( OUT_enable_pin( toupper(argv[3][0]), 1) > 0 ) ?  pv_snprintfP_OK() : pv_snprintfP_ERR();
+		return;
+	}
+
+	// write out disable (A|B)
+	if (!strcmp_P( strupr(argv[2]), PSTR("DISABLE\0")) ) {
+		( OUT_enable_pin( toupper(argv[3][0]), 0) > 0 ) ?  pv_snprintfP_OK() : pv_snprintfP_ERR();
+		return;
+	}
+
+	// write out set
+	if (!strcmp_P( strupr(argv[2]), PSTR("SET\0")) ) {
+		( OUT_reset_pin (1) > 0 ) ?  pv_snprintfP_OK() : pv_snprintfP_ERR();
+		return;
+	}
+
+	// write out reset
+	if (!strcmp_P( strupr(argv[2]), PSTR("RESET\0")) ) {
+		( OUT_reset_pin (0) > 0 ) ?  pv_snprintfP_OK() : pv_snprintfP_ERR();
+		return;
+	}
+
+	// write out sleep
+	if (!strcmp_P( strupr(argv[2]), PSTR("SLEEP\0")) ) {
+		( OUT_sleep_pin (1) > 0 ) ?  pv_snprintfP_OK() : pv_snprintfP_ERR();
+		return;
+	}
+
+	// write out awake
+	if (!strcmp_P( strupr(argv[2]), PSTR("AWAKE\0")) ) {
+		( OUT_sleep_pin (0) > 0 ) ?  pv_snprintfP_OK() : pv_snprintfP_ERR();
+		return;
+	}
+
+	// write out ph01 (A|B)
+	if (!strcmp_P( strupr(argv[2]), PSTR("PH01\0")) ) {
+		( OUT_phase_pin( toupper(argv[3][0]), 1) > 0 ) ?  pv_snprintfP_OK() : pv_snprintfP_ERR();
+		return;
+	}
+
+	// write out ph10 (A|B)
+	if (!strcmp_P( strupr(argv[2]), PSTR("PH10\0")) ) {
+		( OUT_phase_pin( toupper(argv[3][0]), 0) > 0 ) ?  pv_snprintfP_OK() : pv_snprintfP_ERR();
+		return;
+	}
+
+	// write out power on|off
+	if (!strcmp_P( strupr(argv[2]), PSTR("POWER\0")) ) {
+
+		if (!strcmp_P( strupr(argv[3]), PSTR("ON\0")) ) {
+			OUT_power_on();
+			pv_snprintfP_OK();
+			return;
+		}
+		if (!strcmp_P( strupr(argv[3]), PSTR("OFF\0")) ) {
+			OUT_power_off();
+			pv_snprintfP_OK();
+			return;
+		}
+		pv_snprintfP_ERR();
+		return;
+	}
+
+	//  write out valve (open|close) (A|B) (ms)
+	if (!strcmp_P( strupr(argv[2]), PSTR("VALVE\0")) ) {
+
+		// Proporciono corriente.
+		OUT_power_on();
+		// Espero 10s que se carguen los condensasores
+		vTaskDelay( ( TickType_t)( 10000 / portTICK_RATE_MS ) );
+
+		if (!strcmp_P( strupr(argv[3]), PSTR("OPEN\0")) ) {
+			( OUT_valve( toupper(argv[4][0]), V_OPEN, atoi(argv[5]) )  > 0 ) ?  pv_snprintfP_OK() : pv_snprintfP_ERR();
+			OUT_power_off();
+			return;
+		}
+		if (!strcmp_P( strupr(argv[3]), PSTR("CLOSE\0")) ) {
+			( OUT_valve( toupper(argv[4][0]), V_CLOSE, atoi(argv[5]) )  > 0 ) ?  pv_snprintfP_OK() : pv_snprintfP_ERR();
+			OUT_power_off();
+			return;
+		}
+
+		OUT_power_off();
+		pv_snprintfP_ERR();
+		return;
+	}
+
+	pv_snprintfP_ERR();
+	return;
+
+}
+//------------------------------------------------------------------------------------
 
 
