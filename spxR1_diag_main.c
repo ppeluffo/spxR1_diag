@@ -19,7 +19,9 @@
  *  Para ver el uso de memoria usamos
  *  avr-nm -n spxR1.elf | more
  *
-
+ * STATUS:
+ * - Los comandos para BT funcionan bien pero no puedo emparejar el adaptador HC-06 con el linux.
+ *
  */
 
 
@@ -62,8 +64,7 @@ int main( void )
 
 	frtos_open(fdUSB, 115200);
 	frtos_open(fdGPRS, 115200);
-	//frtos_open(fdBT, 115200);
-	frtos_open(fdBT, 9600);
+	frtos_open(fdBT, 9600 );
 	frtos_open(fdI2C, 100 );
 
 	// Creo los semaforos

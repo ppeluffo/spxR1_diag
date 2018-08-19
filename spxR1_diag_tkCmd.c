@@ -28,7 +28,7 @@ static void pv_cmd_rwRTC(uint8_t cmd_mode );
 static void pv_cmd_rwRTC_SRAM(uint8_t cmd_mode );
 static void pv_cmd_sens12V(void);
 static void pv_cmd_rwGPRS(uint8_t cmd_mode );
-static void pv_cmd_bt(void);
+static void pv_cmd_rwBT(void);
 static void pv_cmd_rwXBEE(uint8_t cmd_mode );
 static void pv_cmd_INA(uint8_t cmd_mode );
 static void pv_cmd_rwACH(uint8_t cmd_mode );
@@ -78,7 +78,7 @@ uint8_t ticks;
 		c = '\0';	// Lo borro para que luego del un CR no resetee siempre el timer.
 		// el read se bloquea 50ms. lo que genera la espera.
 		//while ( CMD_read( (char *)&c, 1 ) == 1 ) {
-		while ( frtos_read( fdUSB, (char *)&c, 1 ) == 1 ) {
+		while ( ( frtos_read( fdUSB, (char *)&c, 1 ) == 1 ) || ( frtos_read( fdBT, (char *)&c, 1 ) == 1 ) ) {
 			FRTOS_CMD_process(c);
 		}
 	}
@@ -165,7 +165,7 @@ static void cmdWriteFunction(void)
 
 	// BT
 	if (!strcmp_P( strupr(argv[1]), PSTR("BT\0")) ) {
-		pv_cmd_bt();
+		pv_cmd_rwBT();
 		return;
 	}
 
@@ -377,6 +377,7 @@ static void cmdHelpFunction(void)
 		xprintf_P( PSTR("  xbee (pwr|sleep|reset) {on|off}\r\n\0"));
 		xprintf_P( PSTR("  bt {on|off}\r\n\0"));
 		xprintf_P( PSTR("      msg {string}\r\n\0"));
+		xprintf_P( PSTR("      config\r\n\0"));
 		xprintf_P( PSTR("  ina (id) conf {value}\r\n\0"));
 		xprintf_P( PSTR("  analog {ina_id} conf128 \r\n\0"));
 		xprintf_P( PSTR("  clrd {0|1}\r\n\0"));
@@ -574,14 +575,14 @@ static void pv_cmd_sens12V(void)
 	return;
 }
 //------------------------------------------------------------------------------------
-static void pv_cmd_bt(void)
+static void pv_cmd_rwBT(void)
 {
 	// write bt on|off
 	if (!strcmp_P( strupr(argv[2]), PSTR("ON\0")) ) {
 		IO_set_BT_PWR_CTL();
-		vTaskDelay( ( TickType_t)( 1000 / portTICK_RATE_MS ) );
-		xCom_printf_P( fdBT, PSTR("AT+BAUD4\r\n\0"));
-		xprintf_P( PSTR("Init BT9600 ( AT+BAUD4)\r\n\0"),argv[3] );
+//		vTaskDelay( ( TickType_t)( 1000 / portTICK_RATE_MS ) );
+//		xCom_printf_P( fdBT, PSTR("AT+BAUD4\r\n\0"));
+//		xprintf_P( PSTR("Init BT9600 ( AT+BAUD4)\r\n\0"),argv[3] );
 		pv_snprintfP_OK();
 		return;
 	}
@@ -599,6 +600,19 @@ static void pv_cmd_bt(void)
 		xprintf_P( PSTR("sent->%s\r\n\0"),argv[3] );
 		return;
 	}
+
+	// write bt config
+	if (!strcmp_P(strupr(argv[2]), PSTR("CONFIG\0"))) {
+		IO_clr_BT_PWR_CTL();
+		vTaskDelay( ( TickType_t)( 2000 / portTICK_RATE_MS ) );
+		IO_set_BT_PWR_CTL();
+		vTaskDelay( ( TickType_t)( 1000 / portTICK_RATE_MS ) );
+		xCom_printf_P( fdBT, PSTR("AT+BAUD4\r\n\0"));
+
+		xCom_printf_P( fdUSB,PSTR("Init BT9600 ( AT+BAUD4)\r\n\0"),argv[3] );
+		return;
+	}
+
 
 	xprintf_P( PSTR("cmd ERROR: ( write bt .... )\r\n\0"));
 	return;

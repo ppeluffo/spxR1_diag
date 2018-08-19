@@ -33,7 +33,6 @@ void tkCtl(void * pvParameters)
 		// Cada 5s hago un chequeo de todo. En particular esto determina el tiempo
 		// entre que activo el switch de la terminal y que esta efectivamente responde.
 		vTaskDelay( ( TickType_t)( TKCTL_DELAY_S * 1000 / portTICK_RATE_MS ) );
-
 		pv_tkCtl_wink_led();
 		WDT_Reset();
 	}
