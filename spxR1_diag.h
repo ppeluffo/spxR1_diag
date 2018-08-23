@@ -55,8 +55,8 @@
 //------------------------------------------------------------------------------------
 // DEFINES
 //------------------------------------------------------------------------------------
-#define SPX_FW_REV "1.0.2"
-#define SPX_FW_DATE "@ 20180819"
+#define SPX_FW_REV "1.0.3"
+#define SPX_FW_DATE "@ 20180822"
 
 #define SPX_HW_MODELO "spxR1_diag HW:xmega256A3B R1.0"
 #define SPX_FTROS_VERSION "FW:FRTOS10 TICKLESS"
@@ -82,13 +82,15 @@
 #define tkCmd_STACK_SIZE		384
 #define tkGprs_rx_STACK_SIZE	512
 #define tkGprs_tx_STACK_SIZE	640
+#define tkDigital_STACK_SIZE	640
 
 #define tkCtl_TASK_PRIORITY	 		( tskIDLE_PRIORITY + 1 )
 #define tkCmd_TASK_PRIORITY	 		( tskIDLE_PRIORITY + 1 )
 #define tkGprs_rx_TASK_PRIORITY		( tskIDLE_PRIORITY + 1 )
 #define tkGprs_tx_TASK_PRIORITY		( tskIDLE_PRIORITY + 1 )
+#define tkDigital_TASK_PRIORITY	( tskIDLE_PRIORITY + 1 )
 #
-TaskHandle_t xHandle_idle, xHandle_tkCtl,xHandle_tkCmd, xHandle_tkGprsRx;
+TaskHandle_t xHandle_idle, xHandle_tkCtl,xHandle_tkCmd, xHandle_tkGprsRx, xHandle_tkDigital;
 
 char stdout_buff[CHAR64];
 
@@ -148,6 +150,7 @@ typedef struct {
 void tkCtl(void * pvParameters);
 void tkCmd(void * pvParameters);
 void tkGprsRx(void * pvParameters);
+void tkDigital(void * pvParameters);
 
 xSemaphoreHandle sem_SYSVars;
 StaticSemaphore_t SYSVARS_xMutexBuffer;
